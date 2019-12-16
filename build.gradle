@@ -1,0 +1,92 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group = pluginGroup
+version = pluginVersion
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+compileJava.options.encoding = 'UTF-8'
+javadoc.options.encoding = 'UTF-8'
+archivesBaseName = 'custom-entity-bukkit'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'spigotmc-repo'
+        url = 'https://hub.spigotmc.org/nexus/content/groups/public/'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+    maven {
+        name = 'jitpack'
+        url = 'https://jitpack.io'
+    }
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
+    compileOnly 'com.github.noonmaru:tap:1.0'
+}
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        filter ReplaceTokens, tokens: [version: version]
+    }
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+publishing {
+    publications {
+        CustomEntity(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            pom {
+                name = 'custom-entity'
+                description = 'Custom entity spigot plugin'
+                url = 'https://github.com/noonmaru'
+                licenses {
+                    license {
+                        name = 'GPL-2.0'
+                        url = 'http://www.opensource.org/licenses/gpl-2.0.php'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'noonmaru'
+                        name = 'Noonmaru'
+                        email = 'noonmaru10@gmail.com'
+                        url = 'https://github.com/noonmaru'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://bitbucket.org/noonmaru/custom-entity-bukkit.git'
+                    developerConnection = 'scm:git:ssh://bitbucket.org/noonmaru/custom-entity-bukkit.git'
+                    url = 'https://bitbucket.org/noonmaru/custom-entity-bukkit'
+                }
+            }
+        }
+    }
+}
+
+task spigotJar(type: Copy) {
+    from jar
+    into 'W:\\Servers\\tap\\plugins'
+}

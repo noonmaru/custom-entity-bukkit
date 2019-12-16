@@ -1,0 +1,9 @@
+name: CustomEntity
+version: @version@
+main: com.nemosw.spigot.customentity.CustomEntityPlugin
+depend: [Tap]
+authors: [Nemo]
+commands:
+  customentity:
+    aliases: [ce]
+    usage: /<command> help
