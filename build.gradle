@@ -88,5 +88,5 @@ publishing {
 
 task spigotJar(type: Copy) {
     from jar
-    into 'W:\\Servers\\tap\\plugins'
+    into 'W:\\Servers\\test\\plugins'
 }

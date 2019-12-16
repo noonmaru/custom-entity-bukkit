@@ -1,6 +1,6 @@
 name: CustomEntity
 version: @version@
-main: com.nemosw.spigot.customentity.CustomEntityPlugin
+main: com.github.noonmaru.customentity.CustomEntityPlugin
 depend: [Tap]
 authors: [Nemo]
 commands:
