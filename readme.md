@@ -10,7 +10,7 @@
 > Minecraft Spigot NMS Library
 
 > * ##### Features
->  * Custom Entity Mod server plugin
+>   * Custom Entity Mod server plugin
 
 > * ##### Gradle
 >```groovy
