@@ -51,6 +51,9 @@ public class FakeStandManager
         this.queue.offer(stand);
     }
 
+    /**
+     * 이 메서드를 Tick마다 호출해주세요!
+     */
     public void update()
     {
         updateStands();
