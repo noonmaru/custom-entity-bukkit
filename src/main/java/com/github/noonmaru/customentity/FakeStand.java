@@ -25,16 +25,15 @@ import com.github.noonmaru.tap.item.TapItemStack;
 import com.github.noonmaru.tap.math.BoundingBox;
 import com.github.noonmaru.tap.math.RayTracer;
 import com.github.noonmaru.tap.packet.Packet;
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 
-import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * @author Nemo
@@ -43,7 +42,7 @@ public final class FakeStand
 {
     private final FakeStandManager manager;
 
-    private final Set<Player> trackers = new HashSet<>();
+    private final IdentityHashMap<Player, Tracker> trackers = new IdentityHashMap<>();
 
     private final TapArmorStand stand;
 
@@ -62,6 +61,8 @@ public final class FakeStand
     private boolean enqueued;
 
     private double trackingRange = 128;
+
+    private int trackingTick;
 
     private BoundingBox trackerBox;
 
@@ -103,45 +104,79 @@ public final class FakeStand
 
     void updateTrackers()
     {
+        int trackingTick = ++this.trackingTick;
         BoundingBox trackerBox = getTrackerBox();
-
         World world = stand.getBukkitWorld();
-        Iterator<Player> iterator = trackers.iterator();
+        List<Player> newTrackers = trackerBox.getEntities(world, null, EntitySelectors.PLAYER.and(entity -> ((Player) entity).getListeningPluginChannels().contains(CustomEntityPacket.CHANNEL)));
+
+        for (Player newTracker : newTrackers)
+        {
+            Tracker tracker = trackers.computeIfAbsent(newTracker, player -> new Tracker());
+
+            if (tracker.trackingCount == 0) //처음 등록될때
+            {
+                ArmorStand bukkitEntity = stand.getBukkitEntity();
+                int id = stand.getId();
+                Packet.ENTITY.spawnMob(bukkitEntity).sendTo(newTrackers);
+                Packet.ENTITY.metadata(bukkitEntity).sendTo(newTrackers);
+                Packet.ENTITY.equipment(id, EquipmentSlot.HEAD, item).sendTo(newTrackers);
+                CustomEntityPacket.register(id).sendTo(newTrackers);
+                CustomEntityPacket.scale(id, scaleX, scaleY, scaleZ, 0).sendTo(newTrackers);
+            }
+
+            tracker.trackingCount = trackingTick; //트래킹 카운트 업데이트
+        }
+
+        Iterator<Map.Entry<Player, Tracker>> iterator = trackers.entrySet().iterator();
 
         while (iterator.hasNext())
         {
-            Player player = iterator.next();
+            Map.Entry<Player, Tracker> entry = iterator.next();
 
-            if (!player.isValid())
+            if (trackingTick != entry.getValue().trackingCount) //범위 밖에 있어서 트래킹 카운트가 올라가지 않았을경우 제거
             {
                 iterator.remove();
-                continue;
-            }
-
-            Location loc = player.getLocation();
-
-            if (world != loc.getWorld() || !trackerBox.intersectWith(player))
-            {
-                iterator.remove();
-                Packet.ENTITY.destroy(stand.getId()).sendTo(player);
+                Packet.ENTITY.destroy(stand.getId()).sendTo(entry.getKey());
             }
         }
 
-        List<Player> newTrackers = trackerBox.getEntities(world, null, EntitySelectors.PLAYER.and(entity -> {
-            Player player = (Player) entity;
-            return !trackers.contains(player) && player.getListeningPluginChannels().contains(CustomEntityPacket.CHANNEL);
-        }));
+        //OLDCODES
+/*                Iterator<Player> iterator = trackers.iterator();
 
-        //Spawn
-        ArmorStand bukkitEntity = stand.getBukkitEntity();
-        int id = stand.getId();
-        Packet.ENTITY.spawnMob(bukkitEntity).sendTo(newTrackers);
-        Packet.ENTITY.metadata(bukkitEntity).sendTo(newTrackers);
-        Packet.ENTITY.equipment(id, EquipmentSlot.HEAD, item).sendTo(newTrackers);
-        CustomEntityPacket.register(id).sendTo(newTrackers);
-        CustomEntityPacket.scale(id, scaleX, scaleY, scaleZ, 0).sendTo(newTrackers);
+                while (iterator.hasNext())
+                {
+                    Player player = iterator.next();
 
-        this.trackers.addAll(newTrackers);
+                    if (!player.isValid())
+                    {
+                        iterator.remove();
+                        continue;
+                    }
+
+                    Location loc = player.getLocation();
+
+                    if (world != loc.getWorld() || !trackerBox.intersectWith(player))
+                    {
+                        iterator.remove();
+                        Packet.ENTITY.destroy(stand.getId()).sendTo(player);
+                    }
+                }
+
+                List<Player> newTrackers = trackerBox.getEntities(world, null, EntitySelectors.PLAYER.and(entity -> {
+                    Player player = (Player) entity;
+                    return !trackers.contains(player) && player.getListeningPluginChannels().contains(CustomEntityPacket.CHANNEL);
+                }));
+
+                //Spawn
+                ArmorStand bukkitEntity = stand.getBukkitEntity();
+                int id = stand.getId();
+                Packet.ENTITY.spawnMob(bukkitEntity).sendTo(newTrackers);
+                Packet.ENTITY.metadata(bukkitEntity).sendTo(newTrackers);
+                Packet.ENTITY.equipment(id, EquipmentSlot.HEAD, item).sendTo(newTrackers);
+                CustomEntityPacket.register(id).sendTo(newTrackers);
+                CustomEntityPacket.scale(id, scaleX, scaleY, scaleZ, 0).sendTo(newTrackers);
+
+                this.trackers.addAll(newTrackers);*/
     }
 
     private BoundingBox getTrackerBox()
@@ -299,6 +334,11 @@ public final class FakeStand
 
     private void sendPacket(Packet packet)
     {
-        packet.sendTo(trackers);
+        packet.sendTo(trackers.keySet());
+    }
+
+    private static class Tracker
+    {
+        int trackingCount;
     }
 }
