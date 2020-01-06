@@ -135,8 +135,8 @@ public final class FakeStand
 
             if (trackingTick != entry.getValue().trackingCount) //범위 밖에 있어서 트래킹 카운트가 올라가지 않았을경우 제거
             {
-                iterator.remove();
                 Packet.ENTITY.destroy(stand.getId()).sendTo(entry.getKey());
+                iterator.remove();
             }
         }
 

@@ -39,7 +39,7 @@ public final class CustomEntityPlugin extends JavaPlugin
 		registerCommands();
 
 		//debug code
-/*		FakeStandManager manager = new FakeStandManager();
+		/*FakeStandManager manager = new FakeStandManager();
 		Map<Player, FakeStand> stands = new HashMap<>();
 
 		getServer().getPluginManager().registerEvents(new Listener()
