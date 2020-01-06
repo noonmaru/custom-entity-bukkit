@@ -16,14 +16,9 @@
 
 package com.github.noonmaru.customentity;
 
+import com.github.noonmaru.customentity.cmd.*;
 import com.github.noonmaru.tap.command.CommandManager;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import com.github.noonmaru.customentity.cmd.CommandCEColor;
-import com.github.noonmaru.customentity.cmd.CommandCEColorAndScale;
-import com.github.noonmaru.customentity.cmd.CommandCERegister;
-import com.github.noonmaru.customentity.cmd.CommandCEScale;
-import com.github.noonmaru.customentity.cmd.CommandCEUnregister;
 
 public final class CustomEntityPlugin extends JavaPlugin
 {
@@ -42,6 +37,59 @@ public final class CustomEntityPlugin extends JavaPlugin
 		instance = this;
 
 		registerCommands();
+
+		//debug code
+/*		FakeStandManager manager = new FakeStandManager();
+		Map<Player, FakeStand> stands = new HashMap<>();
+
+		getServer().getPluginManager().registerEvents(new Listener()
+		{
+			@EventHandler
+			public void onPlayerJoin(PlayerJoinEvent event)
+			{
+				Player player = event.getPlayer();
+				Location loc = player.getEyeLocation();
+				loc.add(loc.getDirection().multiply(10));
+				stands.put(player, manager.create(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), 0));
+
+			}
+
+			@EventHandler
+			public void onPlayerInteract(PlayerInteractEvent event)
+			{
+				if (event.getHand() == EquipmentSlot.HAND)
+				{
+					if (event.getAction() == Action.RIGHT_CLICK_AIR)
+					{
+
+						Player player = event.getPlayer();
+						Location loc = player.getEyeLocation();
+						loc.add(loc.getDirection().multiply(10));
+						stands.put(player, manager.create(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), 0));
+					}
+					else if (event.getAction() == Action.LEFT_CLICK_AIR)
+					{
+						stands.get(event.getPlayer()).setScale(2.0F, 6.0F, 2.0F, 10);
+					}
+				}
+			}
+		}, this);
+
+		getServer().getScheduler().runTaskTimer(this, () -> {
+			stands.keySet().removeIf(player -> !player.isOnline());
+
+			for (Map.Entry<Player, FakeStand> entry : stands.entrySet())
+			{
+				Player player = entry.getKey();
+				FakeStand stand = entry.getValue();
+				Location loc = player.getEyeLocation();
+				loc.add(loc.getDirection().multiply(10));
+				stand.setPosition(loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), 0);
+				stand.setItem(TapPlayer.wrapPlayer(player).getHeldItemMainHand());
+			}
+			manager.update();
+
+		}, 0, 1);*/
 	}
 
 	private void registerCommands()
