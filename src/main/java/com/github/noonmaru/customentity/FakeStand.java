@@ -68,6 +68,8 @@ public final class FakeStand
 
     private boolean updatePos, updateMeta, updateItem;
 
+    private int updatePosCount;
+
     public FakeStand(FakeStandManager manager, World world, double x, double y, double z, float yaw, float pitch)
     {
         this.manager = manager;
@@ -93,8 +95,9 @@ public final class FakeStand
 
             Vector move = pos.copy().subtract(prevPos);
 
-            if (move.length() > 3.9)
+            if (move.length() > 3.9 || ++updatePosCount > 4096)
             {
+                updatePosCount = 0;
                 sendPacket(Packet.ENTITY.teleport(stand.getBukkitEntity(), pos.x, pos.y, pos.z, yaw, pitch, false));
             }
             else
@@ -228,6 +231,11 @@ public final class FakeStand
         updateItem();
     }
 
+    public void setPosition(Vector pos, float yaw, float pitch)
+    {
+        setPosition(pos.x, pos.y, pos.z, yaw, pitch);
+    }
+
     public void setPosition(double x, double y, double z, float yaw, float pitch)
     {
         pos.set(x, y, z);
@@ -242,6 +250,26 @@ public final class FakeStand
     public Vector getPosition()
     {
         return pos.copy();
+    }
+
+    public float getYaw()
+    {
+        return stand.getYaw();
+    }
+
+    public float getPitch()
+    {
+        return stand.getPitch();
+    }
+
+    public void move(Vector vector, float yaw, float pitch)
+    {
+        move(vector.x, vector.y, vector.z, yaw, pitch);
+    }
+
+    private void move(double x, double y, double z, float yaw, float pitch)
+    {
+        setPosition(prevPos.x + x, prevPos.y + y, prevPos.z + z, yaw, pitch);
     }
 
     public RayTracer createRayTracer()
