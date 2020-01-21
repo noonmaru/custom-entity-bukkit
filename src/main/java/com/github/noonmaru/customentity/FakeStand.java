@@ -66,6 +66,8 @@ public final class FakeStand
 
     private BoundingBox trackerBox;
 
+    private boolean updatePos, updateMeta, updateItem;
+
     public FakeStand(FakeStandManager manager, World world, double x, double y, double z, float yaw, float pitch)
     {
         this.manager = manager;
@@ -85,20 +87,35 @@ public final class FakeStand
 
     void onUpdate()
     {
-        stand.setPositionAndRotation(pos.x, pos.y, pos.z, yaw, pitch);
-
-        Vector move = pos.copy().subtract(prevPos);
-
-        if (move.length() > 3.9)
+        if (updatePos)
         {
-            sendPacket(Packet.ENTITY.teleport(stand.getBukkitEntity(), pos.x, pos.y, pos.z, yaw, pitch, false));
+            stand.setPositionAndRotation(pos.x, pos.y, pos.z, yaw, pitch);
+
+            Vector move = pos.copy().subtract(prevPos);
+
+            if (move.length() > 3.9)
+            {
+                sendPacket(Packet.ENTITY.teleport(stand.getBukkitEntity(), pos.x, pos.y, pos.z, yaw, pitch, false));
+            }
+            else
+            {
+                sendPacket(Packet.ENTITY.relativeMoveLook(stand.getId(), move.x, move.y, move.z, yaw, pitch, false));
+            }
+
+            prevPos.set(pos);
+            updatePos = false;
         }
-        else
+        if (updateMeta)
         {
-            sendPacket(Packet.ENTITY.relativeMoveLook(stand.getId(), move.x, move.y, move.z, yaw, pitch, false));
+            sendPacket(Packet.ENTITY.metadata(stand.getBukkitEntity()));
+            updateMeta = false;
+        }
+        if (updateItem)
+        {
+            sendPacket(Packet.ENTITY.equipment(stand.getId(), EquipmentSlot.HEAD, item));
+            updateItem = false;
         }
 
-        prevPos.set(pos);
         enqueued = false;
     }
 
@@ -139,44 +156,6 @@ public final class FakeStand
                 iterator.remove();
             }
         }
-
-        //OLDCODES
-/*                Iterator<Player> iterator = trackers.iterator();
-
-                while (iterator.hasNext())
-                {
-                    Player player = iterator.next();
-
-                    if (!player.isValid())
-                    {
-                        iterator.remove();
-                        continue;
-                    }
-
-                    Location loc = player.getLocation();
-
-                    if (world != loc.getWorld() || !trackerBox.intersectWith(player))
-                    {
-                        iterator.remove();
-                        Packet.ENTITY.destroy(stand.getId()).sendTo(player);
-                    }
-                }
-
-                List<Player> newTrackers = trackerBox.getEntities(world, null, EntitySelectors.PLAYER.and(entity -> {
-                    Player player = (Player) entity;
-                    return !trackers.contains(player) && player.getListeningPluginChannels().contains(CustomEntityPacket.CHANNEL);
-                }));
-
-                //Spawn
-                ArmorStand bukkitEntity = stand.getBukkitEntity();
-                int id = stand.getId();
-                Packet.ENTITY.spawnMob(bukkitEntity).sendTo(newTrackers);
-                Packet.ENTITY.metadata(bukkitEntity).sendTo(newTrackers);
-                Packet.ENTITY.equipment(id, EquipmentSlot.HEAD, item).sendTo(newTrackers);
-                CustomEntityPacket.register(id).sendTo(newTrackers);
-                CustomEntityPacket.scale(id, scaleX, scaleY, scaleZ, 0).sendTo(newTrackers);
-
-                this.trackers.addAll(newTrackers);*/
     }
 
     private BoundingBox getTrackerBox()
@@ -193,6 +172,20 @@ public final class FakeStand
         double w = this.trackingRange;
 
         return this.trackerBox = Tap.MATH.newBoundingBox(x - w, y - w, z - w, x + w, y + w, z + w);
+    }
+
+    public void setCustomName(String name)
+    {
+        stand.setCustomName(name);
+
+        updateMeta();
+    }
+
+    public void setCustomNameVisible(boolean visible)
+    {
+        stand.setCustomNameVisible(visible);
+
+        updateMeta();
     }
 
     public void setGlowingTo(boolean glowing, Iterable<? extends Player> players)
@@ -220,12 +213,7 @@ public final class FakeStand
     {
         stand.setGlowing(glowing);
 
-        updateMetadata();
-    }
-
-    private void updateMetadata()
-    {
-        sendPacket(Packet.ENTITY.metadata(stand.getBukkitEntity()));
+        updateMeta();
     }
 
     public TapItemStack getItem()
@@ -247,6 +235,7 @@ public final class FakeStand
         this.pitch = pitch;
         this.trackerBox = null;
 
+        updatePos = true;
         enqueue();
     }
 
@@ -273,7 +262,13 @@ public final class FakeStand
     {
         stand.setHeadPose(x, y, z);
 
-        updateMetadata();
+        updateMeta();
+    }
+
+    private void updateMeta()
+    {
+        updateMeta = true;
+        enqueue();
     }
 
     public float getScaleX()
@@ -329,7 +324,8 @@ public final class FakeStand
 
     private void updateItem()
     {
-        sendPacket(Packet.ENTITY.equipment(stand.getId(), EquipmentSlot.HEAD, item));
+        updateItem = true;
+        enqueue();
     }
 
     private void sendPacket(Packet packet)

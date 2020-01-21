@@ -23,6 +23,6 @@
 >
 >...
 >dependencies {
->    implementation 'com.github.noonmaru:custom-entity:1.0'
+>    implementation 'com.github.noonmaru:custom-entity:1.0.2'
 >}
 >```
